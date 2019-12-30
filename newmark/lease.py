@@ -1,45 +1,48 @@
 from bs4 import BeautifulSoup
 import pandas as pd
-# import sqlalchemy
-# import os
-# import requests
-# import time
-# import copy
+import sqlalchemy
+import os
+import requests
+import time
+import copy
 import numpy as np
 
 # todo make this an env variable (for airflow docker)
 # link = os.environ.get('newmarkLeaseLink')
 
-# todo uncomment the below as it used later - just not needed right now
+## comment out below when running locally
 link = "https://newmarkretail.com/lease-property-list/?from=details_search&region=New%20York%" \
        "20Metro&market&sub_market&total_space_min=MIN%20SIZE&total_space_max=MAX%20SIZE&space" \
        "_search_type&submit=Search"
 
-# page = requests.get(link)
-# soup = BeautifulSoup(page.content, 'html.parser')
-# key = soup.find("div",class_="g-recaptcha")["data-sitekey"]
-# print(key)
-# time.sleep(5)
+page = requests.get(link)
+soup = BeautifulSoup(page.content, 'html.parser')
+key = soup.find("div",class_="g-recaptcha")["data-sitekey"]
+print(key)
+time.sleep(5)
 
-# headers = {
-#     'User-Agent': 'Amit Shah',
-#     'From': 'amit.shah@gmail.com',
-#     'data-sitekey': '{}'.format(key) #6LfOxcMUAAAAAHW2XfkdW5gUJSADc5ulpwgkJjF3
-# }
+headers = {
+    'User-Agent': 'Amit Shah',
+    'From': 'amit.shah@gmail.com',
+    'data-sitekey': '{}'.format(key)
+}
 
 
-# page = requests.get(link, headers)
-# soup = BeautifulSoup(page.content, 'html.parser')
+page = requests.get(link, headers)
+soup = BeautifulSoup(page.content, 'html.parser')
+##
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
-with open('./file_lease.txt', 'r') as file:
-    content = file.read()
-
-soup = BeautifulSoup(content, 'html.parser')
+## uncomment the below when using locally
+# with open('./file_lease.txt', 'r') as file:
+#     content = file.read()
+#
+# soup = BeautifulSoup(content, 'html.parser')
 # print(soup)
+##
 
 tables = soup.find_all('table', class_="lease_property")
 
@@ -124,12 +127,8 @@ for gparent in tables:
         broker_df.insert(2, 'property_id', 1)
         print(broker_df)
         final_broker_table = final_broker_table.append(broker_df)
-    # final_df.append(pd.DataFrame(final_lease_property = pd.DataFrame()
-    # print('f df:', final_df)
-    print('final broker --** \n', final_broker_table)
-    print('final property --** \n', final_lease_property)
 
 print('final broker --** \n', final_broker_table)
 print('final property --** \n', final_lease_property)
 
-# will need to put into a database below
+# todo need to put it into sql database

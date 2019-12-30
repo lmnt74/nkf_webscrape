@@ -20,8 +20,7 @@ create table lease_properties (
     , region varchar(50)
     , market varchar(50)
     , submarket varchar(50)
-    , total_sqft_available varchar(50)
-    , spaces varchar(50)
+    , description varchar(500)
  )
 
  create table broker_property (
