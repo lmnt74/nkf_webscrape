@@ -1,10 +1,10 @@
 from bs4 import BeautifulSoup
 import pandas as pd
-import sqlalchemy
-import os
-import requests
-import time
-import copy
+# import sqlalchemy
+# import os
+# import requests
+# import time
+# import copy
 import numpy as np
 
 # todo make this an env variable (for airflow docker)
@@ -35,17 +35,12 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
-with open('./file.txt', 'r') as file:
+with open('./file_lease.txt', 'r') as file:
     content = file.read()
 
 soup = BeautifulSoup(content, 'html.parser')
 # print(soup)
-# a_class = soup.find_all('a')
-# for item in a_class:
-#        print(item)
 
-# for result in soup.find_all('div', id="results").descendants:
-# div = soup.div
 tables = soup.find_all('table', class_="lease_property")
 
 final_lease_property = pd.DataFrame()
@@ -137,16 +132,4 @@ for gparent in tables:
 print('final broker --** \n', final_broker_table)
 print('final property --** \n', final_lease_property)
 
-#schema:
-# url: varchar(2000)
-# street address: varchar(2000)
-# (parse with |) city, state (text)
-# market title (text)
-
-
-# print([type(item) for item in list(soup.children)])
-# print(list(soup.children)[2])
-# print(a_class)
-
-# url, address, city ,state, region, market, submarket, sq ft, spaces
-# url, address, city, state, region, --, submarket, sq ft, spaces
+# will need to put into a database below
