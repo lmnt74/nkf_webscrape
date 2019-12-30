@@ -16,6 +16,7 @@ written in MSSQL format and can be tweaked to line up with a different SQL synta
 * Need to figure out how to use the site key in a way that they don't block you after a few pulls
 * Creating a dockerfile for the dag to call
 * Need to create a separate table for brokers only
+* Create functions / classes for the repeating tasks
 
 ### Using the repo ###
 When running the repo on airflow, please make sure you create environment variables that include the links. In the
