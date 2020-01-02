@@ -6,6 +6,8 @@ import requests
 import time
 import copy
 import numpy as np
+import config
+from functions import pullrequests as pr, dataframecreation as dfc
 
 # todo make this an env variable (for airflow docker)
 # link = os.environ.get('newmarkLeaseLink')
@@ -15,21 +17,12 @@ link = "https://newmarkretail.com/lease-property-list/?from=details_search&regio
        "20Metro&market&sub_market&total_space_min=MIN%20SIZE&total_space_max=MAX%20SIZE&space" \
        "_search_type&submit=Search"
 
-page = requests.get(link)
-soup = BeautifulSoup(page.content, 'html.parser')
-key = soup.find("div",class_="g-recaptcha")["data-sitekey"]
-print(key)
-time.sleep(5)
-
-headers = {
-    'User-Agent': 'Amit Shah',
-    'From': 'amit.shah@gmail.com',
-    'data-sitekey': '{}'.format(key)
-}
-
-
-page = requests.get(link, headers)
-soup = BeautifulSoup(page.content, 'html.parser')
+##
+key = pr.pullkey(link)
+print('key:', key)
+headers = config.headers(key)
+print('headers:', headers)
+soup = pr.createsoup(link, headers)
 ##
 
 pd.set_option('display.max_rows', 500)
@@ -47,15 +40,16 @@ pd.set_option('display.width', 1000)
 tables = soup.find_all('table', class_="lease_property")
 
 final_lease_property = pd.DataFrame()
-final_broker_table = pd.DataFrame()
+final_lease_broker_table = pd.DataFrame()
 
 for gparent in tables:
-    print('g\n', gparent)
+    # print('g\n', gparent)
     # appending row
     lease_property = []
+    int_broker_table = pd.DataFrame()
     if gparent.tr or gparent.td:
         for parent in gparent.children:
-            print('parent::: ', parent)
+            # print('parent::: ', parent)
             try:
                 for child in parent.children:
                     if child.select('.lease_property_detail_link_text'):
@@ -86,7 +80,6 @@ for gparent in tables:
                             and child.select(".multiple_space_message")[0].get_text() not in lease_property:
                         lease_property.append(child.select(".multiple_space_message")[0].get_text())
                     for gchild in child.select('.broker_table'):
-                        int_broker_table = pd.DataFrame()
                         for broker in gchild:
                             if len(broker.select('.broker_contact_name'))>0:
                                 for each_broker in broker:
@@ -100,35 +93,10 @@ for gparent in tables:
                                     int_broker_table = int_broker_table.append(pd.DataFrame(broker_table).T)
             except Exception as e:
                 print('Exception is: ', e)
-    try:
-        # property dataframe
-        max_id = final_lease_property['id'].max()
-        lease_df = pd.DataFrame(lease_property).T
-        lease_df.insert(0, 'id', int(max_id+1))
-        print(lease_df)
-        lease_df.columns = final_lease_property.columns
-        final_lease_property = final_lease_property.append(lease_df, sort=False)
-        # broker dataframe
-        broker_df = pd.DataFrame(int_broker_table)
-        broker_df.insert(2, 'property_id', int(max_id+1))
-        print(broker_df)
-        final_broker_table = final_broker_table.append(broker_df)
-    except Exception as e:
-        # property dataframe
-        print('exception is:', e)
-        lease_df = pd.DataFrame(lease_property).T
-        lease_df.columns = ['url', 'address', 'city', 'state', 'region', 'market', 'submarket', 'total_sqft_available'
-            , 'spaces']
-        lease_df.insert(0, 'id', 1)
-        print(lease_df)
-        final_lease_property = final_lease_property.append(lease_df, sort=False)
-        # broker dataframe
-        broker_df = pd.DataFrame(int_broker_table)
-        broker_df.insert(2, 'property_id', 1)
-        print(broker_df)
-        final_broker_table = final_broker_table.append(broker_df)
+    final_lease_property = dfc.createpropertydf(final_lease_property, lease_property, type="lease")
+    final_lease_broker_table = dfc.createbrokerdf(final_lease_broker_table, final_lease_property, int_broker_table)
 
-print('final broker --** \n', final_broker_table)
+print('final broker --** \n', final_lease_broker_table)
 print('final property --** \n', final_lease_property)
 
 # todo need to put it into sql database

@@ -6,6 +6,8 @@ import requests
 import time
 import copy
 import numpy as np
+import config
+from functions import pullrequests as pr, dataframecreation as dfc
 
 # todo make this an env variable (for airflow docker)
 # link = os.environ.get('newmarkLeaseLink')
@@ -13,21 +15,12 @@ import numpy as np
 ## comment out below when running locally
 link = "https://newmarkretail.com/sale-property-list/"
 
-page = requests.get(link)
-soup = BeautifulSoup(page.content, 'html.parser')
-key = soup.find("div",class_="g-recaptcha")["data-sitekey"]
-print(key)
-time.sleep(5)
-
-headers = {
-    'User-Agent': 'Amit Shah',
-    'From': 'amit.shah@gmail.com',
-    'data-sitekey': '{}'.format(key)
-}
-
-
-page = requests.get(link, headers)
-soup = BeautifulSoup(page.content, 'html.parser')
+##
+# key = pr.pullkey(link)
+# print('key:', key)
+# headers = config.headers(key)
+# print('headers:', headers)
+# soup = pr.createsoup(link, headers)
 ##
 
 pd.set_option('display.max_rows', 500)
@@ -35,15 +28,15 @@ pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
 ## uncomment whenever running locally
-# with open('file_sale.html', 'r') as file:
-#     content = file.read()
-# soup = BeautifulSoup(content, 'html.parser')
+with open('file_sale.html', 'r') as file:
+    content = file.read()
+soup = BeautifulSoup(content, 'html.parser')
 # print(soup)
 ##
 
 tables = soup.find_all('table', class_="sale_property")
 final_sale_property = pd.DataFrame()
-final_broker_table = pd.DataFrame()
+final_sale_broker_table = pd.DataFrame()
 
 for gparent in tables:
     # appending row
@@ -92,31 +85,10 @@ for gparent in tables:
                             # time.sleep(3)
                         except Exception as e:
                             print('Exception is:', e)
-    try:
-        # property dataframe
-        max_id = final_sale_property['id'].max()
-        lease_df = pd.DataFrame(sale_property).T
-        lease_df.insert(0, 'id', int(max_id+1))
-        lease_df.columns = final_sale_property.columns
-        final_sale_property = final_sale_property.append(lease_df, sort=False)
-        # broker dataframe
-        broker_df = pd.DataFrame(int_broker_table)
-        broker_df.insert(2, 'property_id', int(max_id+1))
-        final_broker_table = final_broker_table.append(broker_df)
-    except Exception as e:
-        # property dataframe
-        print('exception is:', e)
-        lease_df = pd.DataFrame(sale_property).T
-        lease_df.columns = ['url', 'address', 'city', 'state', 'region', 'market', 'submarket', 'description']
-        lease_df.insert(0, 'id', 1)
-        final_sale_property = final_sale_property.append(lease_df, sort=False)
-        # broker dataframe
-        broker_df = pd.DataFrame(int_broker_table)
-        broker_df.insert(2, 'property_id', 1)
-        final_broker_table = final_broker_table.append(broker_df)
+    final_sale_property = dfc.createpropertydf(final_sale_property, sale_property, type="sale")
+    final_sale_broker_table = dfc.createbrokerdf(final_sale_broker_table, final_sale_property, int_broker_table)
 
-
-print('final broker --** \n', final_broker_table)
+print('final broker --** \n', final_sale_broker_table)
 print('final property --** \n', final_sale_property)
 
-# todo need to put it into sql database
+# todo need to put it into sql database (make sure it's distinct)
